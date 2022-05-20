@@ -1,0 +1,177 @@
+---
+title: "Chapter 1"
+author: "Roxana Agrigoroaie"
+date: "19 05 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Introduction
+
+This is Chapter 1 from the course
+
+## The counties dataset
+
+Verbs: 
+
+- select()
+
+- filter()
+
+- arrange()
+
+- mutate()
+
+```{r}
+counties <- readRDS('data/counties.rds')
+counties
+```
+
+Select
+
+```{r}
+counties %>%
+  select(state, county, population, unemployment)
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(state, county, population, unemployment)
+```
+
+Arrange
+
+Sorts data based on one or more variables (default ascending order)
+
+```{r}
+counties_selected %>%
+  arrange(population)
+```
+
+
+Sort in descending order 
+
+```{r}
+counties_selected %>%
+  arrange(desc(population))
+```
+
+Filter
+
+Extract only particular observations from a dataset based on a condition
+
+```{r}
+counties_selected %>%
+  arrange(desc(population)) %>%
+  filter(state == "New York")
+```
+
+```{r}
+counties_selected %>%
+  arrange(desc(population)) %>%
+  filter(unemployment < 6)
+```
+
+Combining conditions
+
+```{r}
+counties_selected %>%
+  arrange(desc(population)) %>%
+  filter(state == "New York", unemployment < 6)
+```
+
+Exercise 1
+
+```{r}
+counties_selected1 <- counties %>%
+  select(state, county, population, private_work, public_work, self_employed)
+
+counties_selected1 %>%
+  arrange(desc(public_work))
+```
+
+Exercise 2a: Find counties that have a populatoin over 1 million.
+
+```{r}
+counties_selected2 <- counties %>%
+  select(state, county, population)
+  
+
+counties_selected2 %>%
+  filter(population > 1000000)
+```
+
+Exercise 2b: Find only the counties in the state of California that alos have a population above 1000000.
+
+```{r}
+counties_selected %>%
+  filter(state == "California", population > 1000000)
+```
+
+Exercise 3: Filter for counties in the state of Texas that have more than ten thousand people (10000), and sort them in descending order of the percentage of people employed in private work.
+
+```{r}
+counties_selected1 %>%
+  filter(state == "Texas", population > 10000) %>%
+  arrange(desc(private_work))
+```
+
+
+Mutate
+
+Add new variables or change existing variables
+
+```{r}
+# Total number of unemployed people: population * unemployment / 100
+
+counties_selected %>%
+  mutate(unemployed_population = population * unemployment / 100)
+```
+
+```{r}
+counties_selected %>%
+  mutate(unemployed_population = population * unemployment / 100) %>%
+  arrange(desc(unemployed_population))
+```
+
+Exercise 4a: Use mutate() to add a column called public_workers to the dataset, with the number of people employed in public (government) work
+
+```{r}
+counties_selected1 %>%
+  mutate(public_workers = population * public_work / 100)
+```
+
+Exercise 4b: Sort the new column in descending order.
+
+```{r}
+counties_selected1 %>%
+  mutate(public_workers = population * public_work / 100) %>%
+  arrange(desc(public_workers))
+```
+
+
+Exercise 5: Compute the fraction of men (or women) within each county.
+
+```{r}
+counties_selected3 <- counties %>%
+  select(state, county, population, men, women)
+
+counties_selected3 %>%
+  mutate(proportion_women = women/population)
+```
+
+
+Exercise 6: Find the counties (with a population of at least 10000) with the highest proportion of men.
+
+```{r}
+counties %>%
+  select(state, county, population, men, women) %>%
+  mutate(proportion_men = men / population) %>%
+  filter(population > 10000) %>%
+  arrange(desc(proportion_men))
+```
+
