@@ -1,0 +1,264 @@
+---
+title: "Aggregating data"
+author: "Roxana Agrigoroaie"
+date: "21 05 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+```
+
+## Chapter 2:Aggregating data
+
+Count: Find the number of observations
+
+```{r}
+counties <- readRDS('data/counties.rds')
+```
+
+```{r}
+counties %>%
+  count()
+```
+
+Count variable
+
+```{r}
+counties %>%
+  count(state) # number of counties in each state
+```
+
+Count and sort
+
+Sort the counted data to find the most common observations
+
+```{r}
+counties %>%
+  count(state, sort = TRUE)
+```
+
+
+Count population
+
+wt => it computes the sum(wt) for each group
+
+```{r}
+counties %>%
+  count(state, wt = population, sort = TRUE)
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(county, region, state, population, citizens)
+```
+
+
+Exercise 1: Use count() to find the number of counties in each region, using a second argument to sort in descending 
+
+```{r}
+counties_selected %>%
+  count(region, sort = TRUE)
+```
+
+Exercise 2: Count the number of counties in each state, weighted based on the citizens column, and sorted in descending order.
+
+```{r}
+counties_selected %>%
+  count(state, wt = citizens, sort = TRUE)
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(county, region, state, population, walk)
+```
+
+Exercise 3a: Use mutate() to calculate and add a column called population_walk, containing the total number of people who walk to work in a county.
+
+Exercise 3b: Use a (weighted and sorted) count() to find the total number of people who walk to work in each state.
+
+```{r}
+counties_selected %>%
+  mutate(population_walk = walk * population / 100) %>%
+  count(state, wt = population_walk, sort = TRUE)
+```
+
+Summarize: takes many observations and turns them into one observation
+
+```{r}
+counties %>%
+  summarize(total_population = sum(population))
+```
+
+Aggregate and summarize
+
+```{r}
+counties %>%
+  summarize(total_population = sum(population),
+            average_unemployment = mean(unemployment))
+```
+
+Summary functions:
+
+- sum()
+
+- mean()
+
+- median()
+
+- min()
+
+- max()
+
+- n() -> size of the group
+
+Aggregate within groups: group_by
+
+```{r}
+counties %>%
+  group_by(state) %>%
+  summarize(total_pop = sum(population),
+            avg_unemployment = mean(unemployment))
+```
+
+Arrange: to sort
+
+```{r}
+counties %>%
+  group_by(state) %>%
+  summarize(total_pop = sum(population),
+            avg_unemployment = mean(unemployment)) %>%
+  arrange(desc(avg_unemployment))
+```
+
+
+```{r}
+counties %>%
+  group_by(state, metro) %>%
+  summarize(total_pop = sum(population))
+```
+```{r}
+counties_selected <- counties %>%
+  select(county, population, income, unemployment)
+```
+
+
+Exercise 4: Summarize the counties dataset to find the following columns: min_population (with the smallest population), max_unemployment (with the maximum unemployment), and average_income (with the mean of the income variable).
+
+```{r}
+counties_selected %>%
+  summarize(min_population = min(population),
+            max_unemployment = max(unemployment),
+            average_income = mean(income))
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(state, county, population, land_area)
+```
+
+Exercise 5a: Group the data by state, and summarize to create the columns total_area (with total area in square miles) and total_population (with total population).
+
+```{r}
+counties_selected %>%
+  group_by(state) %>%
+  summarize(total_area = sum(land_area),
+            total_population = sum(population))
+```
+
+Exercise 5b: Add a density column with the people per square mile, then arrange in descending order.
+
+```{r}
+counties_selected %>%
+  group_by(state) %>%
+  summarize(total_area = sum(land_area),
+            total_population = sum(population)) %>%
+  mutate(density = total_population / total_area) %>%
+  arrange(desc(density))
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(region, state, county, population)
+```
+
+Exercise 6a: Summarize to find the total population, as a column called total_pop, in each combination of region and state.
+
+
+```{r}
+counties_selected %>%
+  group_by(region, state) %>%
+  summarize(total_pop = sum(population))
+```
+
+Exercise 6b: Notice the tibble is still grouped by region; use another summarize() step to calculate two new columns: the average state population in each region (average_pop) and the median state population in each region (median_pop).
+
+```{r}
+counties_selected %>%
+  group_by(region, state) %>%
+  summarize(total_pop = sum(population)) %>%
+  summarize(average_pop = mean(total_pop),
+            median_pop = median(total_pop))
+
+```
+
+top_n verb: (superseded now, it is recommended to use slice_min() or slice_max())
+
+```{r}
+counties %>%
+  select(state, county, population, unemployment, income) %>%
+  group_by(state) %>%
+  top_n(1, population)
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(region, state, county, metro, population, walk)
+```
+
+Exercise 7: Find the county in each region with the highest percentage of citizens who walk to work.
+
+```{r}
+counties_selected %>%
+  group_by(region) %>%
+  top_n(1, walk)
+```
+
+```{r}
+counties_selected <- counties %>%
+  select(region, state, county, population, income)
+```
+
+
+Exercise 8: Calculate the average income (as average_income) of counties within each region and state. Find the highest income state in each region.
+
+```{r}
+counties_selected %>%
+  group_by(region, state) %>%
+  summarize(average_income = mean(income)) %>%
+  top_n(1, average_income)
+```
+
+
+```{r}
+counties_selected <- counties %>%
+  select(state, metro, population)
+```
+
+Exercise 9a: For each combination of state and metro, find the total population as total_pop.
+
+Exercise 9b: Extract the most populated row from each state, which will be either Metro or Nonmetro.
+
+Exercise 9c: Ungroup, then count how often Metro or Nonmetro appears to see how many states have more people living in those areas.
+
+```{r}
+counties_selected %>%
+  group_by(state, metro) %>%
+  summarize(total_pop = sum(population)) %>%
+  top_n(1, total_pop) %>%
+  ungroup() %>%
+  count(metro)
+```
+
