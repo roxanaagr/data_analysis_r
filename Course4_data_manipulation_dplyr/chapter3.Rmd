@@ -1,0 +1,171 @@
+---
+title: "Selecting and transforming data"
+author: "Roxana Agrigoroaie"
+date: "21 05 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+counties <- readRDS('data/counties.rds')
+```
+
+## Chapter 3: Selecting and Transforming data
+
+Select: only keep columns of interest
+
+```{r}
+# Select a range of columns
+counties %>%
+  select(state, county, drive:work_at_home)
+```
+
+```{r}
+# Select and arrange
+
+counties %>%
+  select(state, county, drive:work_at_home) %>%
+  arrange(drive)
+```
+
+Select helpers
+
+
+```{r}
+# Contains
+
+counties %>%
+  select(state, county, contains("work"))
+
+# Starts with
+counties %>%
+  select(state, county, starts_with("income"))
+
+```
+
+Other select helpers: contains(); starts_with(); ends_with(); last_col();
+
+For more: ?select_helpers
+
+Removing a variable:
+
+```{r}
+counties %>%
+  select(-census_id)
+```
+
+Exercise 1a: Use glimpse() to examine all the variables in the counties table.
+
+```{r}
+glimpse(counties)
+```
+
+
+Exercise 1b: Select the columns for state, county, population, and (using a colon) all five of those industry-related variables; there are five consecutive variables in the table related to the industry of people's work: professional, service, office, construction, and production.
+
+Exercise 1c: Arrange the table in descending order of service to find which counties have the highest rates of working in the service industry.
+
+
+```{r}
+counties %>%
+  select(state, county, population, professional:production) %>%
+  arrange(desc(service))
+```
+
+Exercise 2a: Select the columns state, county, population, and all those that end with work.
+
+Exercise 2b: Filter just for the counties where at least 50% of the population is engaged in public work.
+
+```{r}
+counties %>%
+  select(state, county, population, ends_with("work")) %>%
+  filter(public_work > 50)
+```
+
+Rename: change the name of a column
+
+```{r}
+counties %>%
+  rename(unemployment_rate = unemployment)
+```
+
+
+```{r}
+counties %>%
+  select(state, county, population, unemployment_rate = unemployment)
+```
+
+Exercise 3a: Use count() to determine how many counties are in each state.
+
+```{r}
+counties %>%
+  count(state)
+```
+
+Exercise 3b: Notice the n column in the output; use rename() to rename that to num_counties.
+
+```{r}
+counties %>%
+  count(state) %>%
+  rename(num_counties = n)
+```
+
+Exercise 4: Select the columns state, county, and poverty from the counties dataset; in the same step, rename the poverty column to poverty_rate.
+
+```{r}
+counties %>%
+  select(state, county, poverty_rate = poverty)
+```
+
+Transmute: like a combination of select and mutate. It returns a subset of columns that are transformed and changed. 
+
+```{r}
+counties %>%
+  transmute(state, county, fraction_men = men / population)
+```
+
+```{r}
+counties %>%
+  transmute(state, county, fraction_men = men / population, fraction_women = women / population)
+```
+
+
+Exercise 5: Keep only the state, county, and population columns, and add a new column, density, that contains the population per land_area. Filter for only counties with a population greater than one million. Sort the table in ascending order of density.
+
+```{r}
+counties %>%
+  transmute(state, county, population, density = population / land_area) %>%
+  filter(population > 1000000) %>%
+  arrange(density)
+```
+
+Exercise 6a: Choose the right verb for changing the name of the unemployment column to unemployment_rate. 
+
+```{r}
+counties %>%
+  rename(unemployment_rate = unemployment)
+```
+
+Exercise 6b: Choose the right verb for keeping only the columns state, county, and the ones containing poverty.
+
+```{r}
+counties %>%
+  select(state, county, contains("poverty"))
+```
+
+Exercise 6c: Calculate a new column called fraction_women with the fraction of the population made up of women, without dropping any columns.
+
+```{r}
+counties %>%
+  mutate(fraction_women = women / population)
+```
+
+
+Exercise 6d: Keep only three columns: the state, county, and employed / population, which you'll call employment_rate.
+
+```{r}
+counties %>%
+  transmute(state, county, employment_rate = employed / population)
+```
+
