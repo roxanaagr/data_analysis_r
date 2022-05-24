@@ -1,0 +1,225 @@
+---
+title: 'Chapter 4: Case study'
+author: "Roxana Agrigoroaie"
+date: "23 05 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+babynames <- readRDS("data/babynames.rds")
+```
+
+## Case study: The babynames dataset
+
+```{r}
+glimpse(babynames)
+```
+
+Frequency of a name
+
+```{r}
+babynames %>%
+  filter(name == "Amy")
+```
+
+```{r}
+babynames %>%
+  filter(name == "Amy") %>%
+  ggplot(aes(x = year, y = number)) + 
+  geom_line()
+```
+
+Filter for multiple names
+
+```{r}
+babynames %>%
+  filter(name %in% c("Amy", "Christopher")) %>%
+  ggplot(aes(y = number, x = year, color = name)) + 
+  geom_line()
+```
+
+When was each name most common?
+
+```{r}
+babynames %>%
+  group_by(name) %>%
+  top_n(1, number)
+```
+
+Exercise 1: Filter for only the year 1990. Sort the table in descending order of the number of babies born.
+
+```{r}
+babynames %>%
+  filter(year == 1990) %>%
+  arrange(desc(number))
+```
+
+Exercise 2: Use group_by() and top_n() to find the most common name for US babies in each year.
+
+```{r}
+babynames %>%
+  group_by(year) %>%
+  top_n(1, number)
+```
+
+Exercise 3a: Filter for only the names Steven, Thomas, and Matthew, and assign it to an object called selected_names.
+
+Exercise 3b: Visualize those three names as a line plot over time, with each name represented by a different color.
+
+```{r}
+selected_names <- babynames %>%
+  filter(name %in% c("Steven", "Thomas", "Matthew"))
+
+ggplot(selected_names, aes(x = year, y = number, color = name)) + 
+  geom_line()
+```
+
+Grouped mutates: combining group_by() and mutate()
+
+```{r}
+babynames %>%
+  group_by(year) %>%
+  mutate(year_total = sum(number))
+```
+
+The result is still grouped, therefore we use ungroup().
+
+Add fraction of people with a specific name in each year.
+
+```{r}
+babynames %>%
+  group_by(year) %>%
+  mutate(year_total = sum(number)) %>%
+  ungroup() %>%
+  mutate(fraction = number / year_total)
+```
+
+Exercise 4a: First, calculate the total number of people born in that year in this dataset as year_total. Next, use year_total to calculate the fraction of people born in each year that have each name.
+
+```{r}
+babynames %>%
+  group_by(year) %>%
+  mutate(year_total = sum(number)) %>%
+  ungroup() %>%
+  mutate(fraction = number / year_total)
+```
+
+Exercise 4b: Now use your newly calculated fraction column, in combination with top_n(), to identify the year each name is most common.
+
+```{r}
+babynames %>%
+  group_by(year) %>%
+  mutate(year_total = sum(number)) %>%
+  ungroup() %>%
+  mutate(fraction = number / year_total) %>%
+  group_by(name) %>%
+  top_n(1, fraction)
+```
+
+Exercise 5a:  Use a grouped mutate to add two columns: name_total, with the sum of the number of babies born with that name in the entire dataset. name_max, with the maximum number of babies born in any year.
+
+```{r}
+babynames %>% 
+  group_by(name) %>%
+  mutate(name_total = sum(number)) %>%
+  mutate(name_max = max(number))
+```
+
+Exercise 5b: Add another step to ungroup the table.
+Exercise 5c: Add a column called fraction_max containing the number in the year divided by name_max.
+
+```{r}
+babynames %>% 
+  group_by(name) %>%
+  mutate(name_total = sum(number)) %>%
+  mutate(name_max = max(number)) %>%
+  ungroup() %>%
+  mutate(fraction_max = number / name_max)
+```
+
+
+Exercise 6:
+
+```{r}
+names_normalized <- babynames %>%
+                     group_by(name) %>%
+                     mutate(name_total = sum(number),
+                            name_max = max(number)) %>%
+                     ungroup() %>%
+                     mutate(fraction_max = number / name_max)
+```
+
+Filter the names_normalized table to limit it to the three names Steven, Thomas, and Matthew.
+Create a line plot to visualize fraction_max over time, colored by name.
+
+```{r}
+names_normalized %>%
+  filter(name %in% c("Steven", "Thomas", "Matthew")) %>%
+  ggplot(aes(x = year, y = fraction_max, color = name)) +
+  geom_line()
+```
+Window functions:
+
+takes a vector and return another vector of the same length. 
+
+lag() -> moves each element of a vector to the right
+
+Compare consecutive steps:
+vector - lag(vector)
+
+```{r}
+babynames_fraction <- babynames %>%
+  group_by(year) %>%
+  mutate(year_total = sum(number)) %>%
+  ungroup() %>%
+  mutate(fraction = number / year_total)
+
+babynames_fraction %>%
+  filter(name == "Matthew") %>%
+  arrange(year) %>%
+  mutate(difference = fraction - lag(fraction)) %>%
+  # TO get the biggest jump in popularity 
+  arrange(desc(difference))
+```
+
+Changes within every name
+
+```{r}
+babynames_fraction %>%
+  arrange(name, year) %>%
+  mutate(difference = fraction - lag(fraction)) %>%
+  group_by(name) %>%
+  arrange(desc(difference))
+```
+
+Exercise 7: Arrange the data in ascending order of name and then year. Group by name so that your mutate works within each name. Add a column ratio containing the ratio (not difference) of fraction between each year.
+
+```{r}
+babynames_fraction %>%
+  arrange(name, year) %>%
+  group_by(name) %>%
+  mutate(ratio = fraction / lag(fraction))
+```
+
+
+Exercise 8: From each name in the data, keep the observation (the year) with the largest ratio; note the data is already grouped by name.
+Sort the ratio column in descending order.
+Filter the babynames_ratios_filtered data further by filtering the fraction column to only display results greater than or equal to 0.001.
+
+```{r}
+babynames_ratios_filtered <- babynames_fraction %>%
+                     arrange(name, year) %>%
+                     group_by(name) %>%
+                     mutate(ratio = fraction / lag(fraction)) %>%
+                     filter(fraction >= 0.00001)
+```
+
+```{r}
+babynames_ratios_filtered %>%
+  top_n(1, ratio) %>%
+  arrange(desc(ratio)) %>%
+  filter(fraction >= 0.001)
+```
+
