@@ -1,0 +1,195 @@
+---
+title: "Chapter 1"
+author: "Roxana Agrigoroaie"
+date: "24 05 2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## Joining Tables
+
+LEGO dataset: made up of multiple tables
+
+```{r}
+# a table with the lego sets throughout time
+sets <- readRDS("data/sets.rds")
+glimpse(sets)
+```
+
+There is a theme_id, which links the sets table to the themes table.
+
+```{r}
+themes <- readRDS("data/themes.rds")
+themes
+```
+
+To see the theme that each set is associated with a join is needed: inner_join.
+
+```{r}
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"))
+```
+
+As both tables have the variable "name", we get name.x for the sets name, and name.y for the themes name
+
+This can be customized using the inner_join
+
+```{r}
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
+
+Most common themes:
+
+```{r}
+sets %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme")) %>%
+  count(name_theme, sort = TRUE)
+```
+
+Other LEGO tables: parts and part_categories.
+
+Part = shape or figurine
+
+```{r}
+parts <- readRDS("data/parts.rds")
+part_categories <- readRDS("data/part_categories.rds")
+```
+
+```{r}
+glimpse(parts)
+```
+
+```{r}
+glimpse(part_categories)
+```
+
+Exercise 1:  Join a list of LEGO parts, available as parts, with these parts' corresponding categories, available as part_categories.
+
+```{r}
+parts %>%
+  inner_join(part_categories, by = c("part_cat_id" = "id"), suffix = c("_part", "_category"))
+```
+
+Joining with a one-to-many relationship
+
+The inventories table: product made up of combination of parts
+
+Joining sets and inventories
+
+```{r}
+inventories <- readRDS("data/inventories.rds")
+```
+
+```{r}
+glimpse(inventories)
+```
+
+```{r}
+glimpse(sets)
+```
+
+In both tables I have the same column: set_num. Therefore I do not need to specify explicitly the name of the column for each table.
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num")
+```
+
+Filtering the joined table
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  filter(version == 1)
+```
+
+Inventory parts -> combines a part with a color 
+
+```{r}
+inventory_parts <- readRDS("data/inventory_parts.rds")
+glimpse(inventory_parts)
+```
+
+Exercise 2: Connect the parts and inventory_parts tables by their part numbers using an inner join.
+
+```{r}
+glimpse(parts)
+```
+
+```{r}
+parts %>%
+  inner_join(inventory_parts, by = "part_num")
+```
+
+The number of rows went from almost 5000 to more than 250000 (due to the one-to-many relationship).
+
+An inner_join works the same way with either table in either position.
+
+Exercise 3: Connect the inventory_parts and parts tables by their part numbers using an inner join.
+
+```{r}
+inventory_parts %>%
+  inner_join(parts, by = "part_num")
+```
+
+Joining three or more tables
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(themes, by = c("theme_id" = "id"), suffix = c("_set", "_theme"))
+```
+
+Exercise 4: Combine the inventories table with the sets table.
+Next, join the inventory_parts table to the table you created in the previous join by the inventory IDs.
+
+```{r}
+glimpse(sets)
+```
+
+```{r}
+glimpse(inventories)
+```
+
+```{r}
+glimpse(inventory_parts)
+```
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(inventory_parts, by = c("id" = "inventory_id"))
+```
+
+What's the most common color?
+Exercise 5a: Inner join the colors table using the color_id column from the previous join and the id column from colors; use the suffixes "_set" and "_color".
+
+```{r}
+colors <- readRDS("data/colors.rds")
+glimpse(colors)
+```
+
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(inventory_parts, by = c("id" = "inventory_id")) %>% 
+  inner_join(colors, by = c("color_id" = "id"), suffix = c("_set", "_color"))
+  
+```
+
+Exercise 5b: Count the name_color column and sort the results so the most prominent colors appear first.
+
+```{r}
+sets %>%
+  inner_join(inventories, by = "set_num") %>%
+  inner_join(inventory_parts, by = c("id" = "inventory_id")) %>% 
+  inner_join(colors, by = c("color_id" = "id"), suffix = c("_set", "_color")) %>%
+  count(name_color, sort = TRUE)
+```
+
